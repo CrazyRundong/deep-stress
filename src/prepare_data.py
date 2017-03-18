@@ -21,6 +21,40 @@ feat_num = 500  # num of feature extracted per sample
 plot_num = 20  # num of test samples to plot
 
 
+def load_and_local_interp(data_set_dir=comsol_dir):
+    assert os.path.exists(data_set_dir)
+    vst_locate = np.linspace(0., 1., vst_num + 2)[1: -1]
+    radius = 1. / (vst_num + 1) / 2. * radius_scale_factor
+    tem_list = []
+    stress_list = []
+    for fname in os.listdir(data_set_dir):
+        fname = os.path.splitext(fname)[0]
+        tem_tokens = fname.split('_')
+        if tem_tokens[0] == 'stress':
+            continue
+        stress_name = '_'.join(['stress'] + tem_tokens[1:]) + '.txt'
+        stress_path = os.path.join(data_set_dir, stress_name)
+        assert os.path.exists(stress_path)
+        tem_data = np.loadtxt(os.path.join(data_set_dir, fname + '.txt'), usecols=(0, 1, 3), dtype=np.float32)
+        stress_data = np.loadtxt(stress_path, usecols=(0, 1, 3), dtype=np.float32)
+        tem_data[:, :2] *= 100
+        stress_data[:, :2] *= 100
+        for x in vst_locate:
+            for y in vst_locate:
+                # TODO(Rundong): not Pythonic, I gona crazy by this, believe me...
+                current_tem = tem_data[
+                    np.logical_and(np.logical_and((x - radius) <= tem_data[:, 0], tem_data[:, 0] <= (x + radius)),
+                                   np.logical_and((y - radius) <= tem_data[:, 1], tem_data[:, 1] <= (y + radius)))]
+                current_stress = stress_data[
+                    np.logical_and(np.logical_and((x - radius) <= stress_data[:, 0], stress_data[:, 0] <= (x + radius)),
+                                   np.logical_and((y - radius) <= stress_data[:, 1], stress_data[:, 1] <= (y + radius)))]
+                stress_max = current_stress.max()
+                tem_list.append(current_tem)
+                stress_list.append(stress_max)
+
+    return tem_list, stress_list
+
+
 def load_and_interp(data_set_dir=comsol_dir):
     assert os.path.exists(data_set_dir)
     stress_ = {}
@@ -149,6 +183,11 @@ def generate_mx_array_itr(data_, label_, batch_size_=10):
 
 
 if __name__ == '__main__':
+    """
+        We try to predict stress via random generated feature
+    and xgboost.
+        It's a naive struggle.
+    """
     print('Loading data...')
     stress, temp, max_stress, max_temp = load_and_interp(comsol_dir)
     print('Cropping samples...')
