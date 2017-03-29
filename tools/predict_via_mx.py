@@ -36,6 +36,7 @@ def main():
         data_names=['data'],
         label_names=['reg_label']
     )
+    model.init_params(mx.initializer.Xavier())
     model.fit(
         train_iter,
         eval_data=val_iter,

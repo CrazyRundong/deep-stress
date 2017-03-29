@@ -21,6 +21,6 @@ def build_lenet():
     fc2 = mx.sym.FullyConnected(data=tanh3, num_hidden=1)
     # softmax loss
     # lenet = mx.sym.SoftmaxOutput(data=fc2, name='softmax')
-    lenet = mx.sym.LinearRegressionOutput(data=fc2, label=label, name='linear_reg')
+    lenet = mx.sym.MAERegressionOutput(data=fc2, label=label, name='linear_reg')
 
     return lenet

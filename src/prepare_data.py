@@ -13,7 +13,7 @@ import re
 comsol_dir = '../Data/comsol_source'
 vst_num = 12  # num of vst per axis
 crop_size = 224  # follow standard CNN input size
-radius_scale_factor = 0.4  # R = grid_size * radius_scale_factor
+radius_scale_factor = 0.3  # R = grid_size * radius_scale_factor
 n_points = int(crop_size * (vst_num + 1) / radius_scale_factor)  # num of points interpolated per axis
 grid_x, grid_y = np.mgrid[0:1:complex(0, n_points), 0:1:complex(0, n_points)]
 circular_div = 16  # K in paper
@@ -21,7 +21,7 @@ feat_num = 500  # num of feature extracted per sample
 plot_num = 20  # num of test samples to plot
 
 
-def load_and_local_interp(data_set_dir=comsol_dir):
+def load_and_crop(data_set_dir=comsol_dir):
     assert os.path.exists(data_set_dir)
     vst_locate = np.linspace(0., 1., vst_num + 2)[1: -1]
     radius = 1. / (vst_num + 1) / 2. * radius_scale_factor
@@ -49,14 +49,14 @@ def load_and_local_interp(data_set_dir=comsol_dir):
                 current_tem[:, :2] -= (x, y)
                 current_tem[:, :2] /= 2 * radius
                 # rescan tem distribution coordinate
-                roi_bool_idx = np.abs(current_tem[:, :2]) <= 0.2
-                extended_roi_idx = np.hstack((roi_bool_idx,
-                                             np.zeros((current_tem.shape[0], 1), dtype=bool)))
-                extended_not_roi_idx = np.hstack((np.logical_not(roi_bool_idx),
-                                                 np.zeros((current_tem.shape[0], 1), dtype=bool)))
-                current_tem[extended_roi_idx] *= 2.
-                current_tem[extended_not_roi_idx] *= 1. / 3.
-                current_tem[extended_not_roi_idx] += .4 - 1. / 6.
+                # roi_bool_idx = np.abs(current_tem[:, :2]) <= 0.2
+                # extended_roi_idx = np.hstack((roi_bool_idx,
+                #                              np.zeros((current_tem.shape[0], 1), dtype=bool)))
+                # extended_not_roi_idx = np.hstack((np.logical_not(roi_bool_idx),
+                #                                  np.zeros((current_tem.shape[0], 1), dtype=bool)))
+                # current_tem[extended_roi_idx] *= 2.
+                # current_tem[extended_not_roi_idx] *= 1. / 3.
+                # current_tem[extended_not_roi_idx] += .4 - 1. / 6.
 
                 current_stress = stress_data[
                     np.logical_and(np.logical_and((x - radius) <= stress_data[:, 0], stress_data[:, 0] <= (x + radius)),
@@ -150,43 +150,6 @@ def crop_samples(temp_, stress_, do_rotate_=False):
 
     return np.array(_temp), np.array(_stress)
 
-
-def generate_random_feat(samples_):
-    radius = int(1. / (vst_num + 1) * n_points * radius_scale_factor)
-    feat_pool = np.zeros((feat_num, 2))
-    for f in range(feat_num):
-        current_feat = np.random.uniform(0, 2 * radius, (2,))
-        while np.linalg.norm(current_feat - (radius, radius)) > radius:
-            current_feat = np.random.uniform(0, 2 * radius, (2,))
-        feat_pool[f] = current_feat
-    feat_pool = feat_pool.astype(int)
-
-    rand_feat = []
-    for sample, max_temp_ in samples_:
-        current_rand_feat = np.append(sample[feat_pool[0], feat_pool[1]], max_temp_)
-        rand_feat.append(current_rand_feat)
-
-    return np.array(rand_feat)
-
-
-def xgb_regression(feat_, max_temp_):
-    X = feat_[..., :-1]
-    y = feat_[..., -1] * max_temp_
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-    dtest = xgb.DMatrix(X_test, label=y_test)
-    param = {'max_depth': 5, 'silent': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'eta': 0.02,
-             'subsample': 0.8}
-    watchlist = [(dtest, 'eval'), (dtrain, 'train')]
-    xgb_model = xgb.train(param, dtrain, num_boost_round=300, evals=watchlist)
-    predictions = xgb_model.predict(dtest)
-    actuals = y_test
-    print('MSR: {}'.format(mean_squared_error(actuals, predictions)))
-    plt_temp = np.random.choice(np.arange(X_test.shape[0]), plot_num, replace=False)
-    plt.plot(np.arange(plot_num, dtype=int), y_test[plt_temp], 'go', predictions[plt_temp], 'rx')
-    plt.show()
-
-
 def generate_mx_array_itr(data_, label_, batch_size_=10):
     assert data_.shape[0] == label_.shape[0]
     n = data_.shape[0]
@@ -194,18 +157,3 @@ def generate_mx_array_itr(data_, label_, batch_size_=10):
     itr = mx.io.NDArrayIter(data_.reshape((n, 1, h, w)), label_, batch_size_, shuffle=True, label_name='reg_label')
     return itr
 
-
-if __name__ == '__main__':
-    """
-        We try to predict stress via random generated feature
-    and xgboost.
-        It's a naive struggle.
-    """
-    print('Loading data...')
-    stress, temp, max_stress, max_temp = load_and_interp(comsol_dir)
-    print('Cropping samples...')
-    samples = crop_samples(stress, temp)
-    print('Generating features...')
-    feat = generate_random_feat(samples)
-    print('Regression by XGBoost...')
-    xgb_regression(feat, max_temp)
