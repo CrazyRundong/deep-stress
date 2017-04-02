@@ -1,19 +1,17 @@
 # -*- coding: utf8 -*-
 import mxnet as mx
-import xgboost as xgb
 import numpy as np
 from scipy.interpolate import griddata
 from scipy.ndimage.interpolation import rotate
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
+from datetime import datetime
 import os
 import re
 
 comsol_dir = '../Data/comsol_source'
+data_path = '../Data/consol_crops.npz'
 vst_num = 12  # num of vst per axis
 crop_size = 224  # follow standard CNN input size
-radius_scale_factor = 0.3  # R = grid_size * radius_scale_factor
+radius_scale_factor = 0.2  # R = grid_size * radius_scale_factor
 n_points = int(crop_size * (vst_num + 1) / radius_scale_factor)  # num of points interpolated per axis
 grid_x, grid_y = np.mgrid[0:1:complex(0, n_points), 0:1:complex(0, n_points)]
 circular_div = 16  # K in paper
@@ -38,6 +36,7 @@ def load_and_crop(data_set_dir=comsol_dir):
         assert os.path.exists(stress_path)
         tem_data = np.loadtxt(tem_path, usecols=(0, 1, 3), dtype=np.float32)
         stress_data = np.loadtxt(stress_path, usecols=(0, 1, 3), dtype=np.float32)
+        # scan to [0, 1]
         tem_data[:, :2] *= 100
         stress_data[:, :2] *= 100
         for x in vst_locate:
@@ -66,6 +65,33 @@ def load_and_crop(data_set_dir=comsol_dir):
                 stress_list.append(stress_max)
 
     return tem_list, stress_list
+
+
+def local_interp(tem_list, stress_list, npz_dir=data_path):
+    interp_size = 28  # follow MNIST
+    xx, yy = np.mgrid[0:1:complex(0, interp_size), 0:1:complex(0, interp_size)]
+    interped_list = []
+    for tem, stress in zip(tem_list, stress_list):
+        tem[:, :2] += 0.5  # norm to [0, 1]
+        c = griddata(tem[:, :2], tem[:, -1], (xx, yy), method='cubic', fill_value=tem[:, -1].mean())
+        interped_list.append(c)
+    interped_list = np.array(interped_list)
+    stress_list = np.array(stress_list)
+
+    tem_max = interped_list[:, -1].max()
+    # tem_mean = np.mean(interped_list, axis=0)
+    stress_max = stress_list.max()
+
+    # interped_list -= tem_mean
+    interped_list /= tem_max
+    stress_list /= stress_max
+
+    # Dump npz
+    np.savez_compressed(npz_dir,
+                        temp=interped_list,
+                        stress=stress_list,
+                        max_temp=tem_max,
+                        max_stress=stress_max)
 
 
 def load_and_interp(data_set_dir=comsol_dir):
@@ -150,10 +176,17 @@ def crop_samples(temp_, stress_, do_rotate_=False):
 
     return np.array(_temp), np.array(_stress)
 
+
 def generate_mx_array_itr(data_, label_, batch_size_=10):
     assert data_.shape[0] == label_.shape[0]
-    n = data_.shape[0]
-    h, w = data_.shape[-2:]
+    n, h, w = data_.shape
     itr = mx.io.NDArrayIter(data_.reshape((n, 1, h, w)), label_, batch_size_, shuffle=True, label_name='reg_label')
     return itr
 
+
+if __name__ == '__main__':
+    print('{}: Loading data...'.format(datetime.now().strftime('%Y.%m.%d-%H:%M:%S')))
+    tem_list, stress_list = load_and_crop()
+    print('{}: Crop and interpolating data...'.format(datetime.now().strftime('%Y.%m.%d-%H:%M:%S')))
+    local_interp(tem_list, stress_list)
+    print('{}: Data dump done.'.format(datetime.now().strftime('%Y.%m.%d-%H:%M:%S')))

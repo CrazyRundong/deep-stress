@@ -15,12 +15,12 @@ def build_lenet():
     pool2 = mx.sym.Pooling(data=tanh2, pool_type="max", kernel=(2, 2), stride=(2, 2))
     # first fullc layer
     flatten = mx.sym.Flatten(data=pool2)
-    fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=500)
+    fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=50)  # origin lenet get 500 nodes
     tanh3 = mx.sym.Activation(data=fc1, act_type="tanh")
     # second fullc
     fc2 = mx.sym.FullyConnected(data=tanh3, num_hidden=1)
     # softmax loss
     # lenet = mx.sym.SoftmaxOutput(data=fc2, name='softmax')
-    lenet = mx.sym.MAERegressionOutput(data=fc2, label=label, name='linear_reg')
+    lenet = mx.sym.LinearRegressionOutput(data=fc2, label=label, name='linear_reg')
 
     return lenet
