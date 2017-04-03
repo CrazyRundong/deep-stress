@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 import src.prepare_data as Data
 import src.build_Nets as Net
 
@@ -16,7 +16,7 @@ def main():
     momentum = 0.9
     num_epoch = 10
     val_ratio = 0.3
-    disp_batch = 50
+    disp_batch = 10
     data_path = '../Data/consol_crops.npz'
 
     data_set = np.load(data_path)
@@ -36,6 +36,8 @@ def main():
         data_names=['data'],
         label_names=['reg_label']
     )
+    model.bind(data_shapes=train_iter.provide_data,
+               label_shapes=train_iter.provide_label)
     model.init_params(mx.initializer.Xavier())
     model.fit(
         train_iter,

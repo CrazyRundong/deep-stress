@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 import mxnet as mx
 import numpy as np
 from scipy.interpolate import griddata
@@ -71,19 +71,19 @@ def local_interp(tem_list, stress_list, npz_dir=data_path):
     interp_size = 28  # follow MNIST
     xx, yy = np.mgrid[0:1:complex(0, interp_size), 0:1:complex(0, interp_size)]
     interped_list = []
-    for tem, stress in zip(tem_list, stress_list):
+    for tem in tem_list:
         tem[:, :2] += 0.5  # norm to [0, 1]
         c = griddata(tem[:, :2], tem[:, -1], (xx, yy), method='cubic', fill_value=tem[:, -1].mean())
         interped_list.append(c)
     interped_list = np.array(interped_list)
     stress_list = np.array(stress_list)
 
-    tem_max = interped_list[:, -1].max()
-    # tem_mean = np.mean(interped_list, axis=0)
-    stress_max = stress_list.max()
-
-    # interped_list -= tem_mean
+    tem_mean = np.mean(interped_list, axis=0)
+    interped_list -= tem_mean
+    tem_max = np.abs(interped_list).max()
     interped_list /= tem_max
+
+    stress_max = stress_list.max()
     stress_list /= stress_max
 
     # Dump npz
