@@ -177,16 +177,19 @@ def crop_samples(temp_, stress_, do_rotate_=False):
     return np.array(_temp), np.array(_stress)
 
 
-def generate_mx_array_itr(data_, label_, batch_size_=10):
+def generate_mx_array_itr(data_, label_, batch_size_=10, shuffle_=True):
     assert data_.shape[0] == label_.shape[0]
     n, h, w = data_.shape
-    itr = mx.io.NDArrayIter(data_.reshape((n, 1, h, w)), label_, batch_size_, shuffle=True, label_name='reg_label')
+    itr = mx.io.NDArrayIter(data_.reshape((n, 1, h, w)), label_, batch_size_, shuffle=shuffle_, label_name='reg_label')
     return itr
 
 
-if __name__ == '__main__':
+def main():
     print('{}: Loading data...'.format(datetime.now().strftime('%Y.%m.%d-%H:%M:%S')))
     tem_list, stress_list = load_and_crop()
     print('{}: Crop and interpolating data...'.format(datetime.now().strftime('%Y.%m.%d-%H:%M:%S')))
     local_interp(tem_list, stress_list)
     print('{}: Data dump done.'.format(datetime.now().strftime('%Y.%m.%d-%H:%M:%S')))
+
+if __name__ == '__main__':
+    main()

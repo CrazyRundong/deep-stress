@@ -1,0 +1,5 @@
+[Dd]ata
+*.npz
+.idea/
+src/__pycache__/
+/Module/
