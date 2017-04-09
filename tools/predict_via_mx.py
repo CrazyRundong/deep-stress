@@ -34,7 +34,8 @@ def main():
 
     train_iter = Data.generate_mx_array_itr(x_train, y_train, batch_size)
     val_iter = Data.generate_mx_array_itr(x_val, y_val, batch_size, shuffle_=False)
-    net = Net.build_lenet()
+    # net = Net.build_lenet()
+    net = Net.build_tiny_yolo()
     metric = mx.metric.RMSE()
     lr_sch = mx.lr_scheduler.FactorScheduler(step=500, factor=0.9)
 
@@ -44,9 +45,9 @@ def main():
         data_names=['data'],
         label_names=['reg_label']
     )
-    model.bind(data_shapes=train_iter.provide_data,
-               label_shapes=train_iter.provide_label)
-    model.init_params(mx.initializer.Normal())
+    # model.bind(data_shapes=train_iter.provide_data,
+    #            label_shapes=train_iter.provide_label)
+    # model.init_params(mx.initializer.Normal())
     model.fit(
         train_iter,
         eval_data=val_iter,
