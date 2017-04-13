@@ -15,13 +15,17 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 def main():
     batch_size = 10
-    base_lr = 0.1
     momentum = 0.9
     num_epoch = 5
     val_ratio = 0.3
     disp_batch = 50
     num_batch = 5
-    data_path = '../Data/consol_crops.npz'
+
+    base_lr = 0.1
+    lr_rescan_epoch = 500
+    lr_rescan_factor = 0.9
+
+    data_path = '../Data/comsol_crops.npz'
 
     if not os.path.exists(data_path):
         Data.main()
@@ -34,10 +38,10 @@ def main():
 
     train_iter = Data.generate_mx_array_itr(x_train, y_train, batch_size)
     val_iter = Data.generate_mx_array_itr(x_val, y_val, batch_size, shuffle_=False)
-    # net = Net.build_lenet()
-    net = Net.build_tiny_yolo()
+    net = Net.build_lenet()
+    # net = Net.build_tiny_yolo()
     metric = mx.metric.RMSE()
-    lr_sch = mx.lr_scheduler.FactorScheduler(step=500, factor=0.9)
+    lr_sch = mx.lr_scheduler.FactorScheduler(step=lr_rescan_epoch, factor=lr_rescan_factor)
 
     model = mx.mod.Module(
         context=mx.gpu(0),
@@ -65,7 +69,9 @@ def main():
     predict_stress = model.predict(val_iter, num_batch)
     mse = mean_squared_error(gt_stress * max_stress, predict_stress.asnumpy() * max_stress)
     print("MSE: {}".format(mse))
-    plt.plot(range(batch_size * num_batch), gt_stress, 'go', predict_stress.asnumpy(), 'rx')
+    plt.plot(range(batch_size * num_batch),
+             gt_stress * max_stress, 'go',
+             predict_stress.asnumpy() * max_stress, 'rx')
     plt.show()
 
 if __name__ == '__main__':
