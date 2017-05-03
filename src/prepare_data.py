@@ -7,8 +7,8 @@ from datetime import datetime
 import os
 import re
 
-comsol_dir = '../Data/comsol_source'
-data_path = '../Data/comsol_crops.npz'
+comsol_dir = './Data/comsol_source'
+data_path = './Data/comsol_crops.npz'
 vst_num = 12  # num of vst per axis
 crop_size = 224  # follow standard CNN input size
 radius_scale_factor = 0.2  # R = grid_size * radius_scale_factor

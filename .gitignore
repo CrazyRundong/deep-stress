@@ -3,3 +3,7 @@
 .idea/
 src/__pycache__/
 /Module/
+*.pdf
+*.png
+*.dot
+*.gv

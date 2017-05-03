@@ -21,11 +21,11 @@ def main():
     disp_batch = 50
     num_batch = 5
 
-    base_lr = 0.1
+    base_lr = 0.01
     lr_rescan_epoch = 500
     lr_rescan_factor = 0.9
 
-    data_path = '../Data/comsol_crops.npz'
+    data_path = './Data/comsol_crops.npz'
 
     if not os.path.exists(data_path):
         Data.main()
@@ -38,8 +38,8 @@ def main():
 
     train_iter = Data.generate_mx_array_itr(x_train, y_train, batch_size)
     val_iter = Data.generate_mx_array_itr(x_val, y_val, batch_size, shuffle_=False)
-    net = Net.build_lenet()
-    # net = Net.build_tiny_yolo()
+    # net = Net.build_lenet()
+    net = Net.build_net_a()
     metric = mx.metric.RMSE()
     lr_sch = mx.lr_scheduler.FactorScheduler(step=lr_rescan_epoch, factor=lr_rescan_factor)
 

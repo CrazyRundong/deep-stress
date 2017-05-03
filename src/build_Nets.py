@@ -30,8 +30,9 @@ def build_lenet():
 # Dark Net in YOLO 2000
 def build_conv_block(**kwargs):
     conv = mx.sym.Convolution(**kwargs)
-    bn = mx.sym.BatchNorm(data=conv, fix_gamma=False)
-    lkReLU = mx.sym.LeakyReLU(data=bn)
+    bn = mx.sym.BatchNorm(data=conv, fix_gamma=False, eps=1e-5 + 1e-10, momentum=0.9,)
+    # lkReLU = mx.sym.LeakyReLU(data=bn)
+    lkReLU = mx.sym.Activation(data=bn, act_type="relu")
 
     return lkReLU
 
@@ -73,3 +74,43 @@ def build_tiny_yolo():
     yolo = mx.sym.LinearRegressionOutput(data=fc2, label=label, name='linear_reg')
 
     return yolo
+
+
+# Our New Net
+def build_net_a():
+    """ based on the insight of VGG Net:
+    2 * Conv((3, 3), stride=1, pad=1) == Conv((5, 5), stride=1, pad=1)
+    n_channel *= 2 after each pooling layer
+    we follow the channel num of LeNet
+    """
+    data = mx.sym.Variable('data')
+    label = mx.sym.Variable('reg_label')
+    pool1 = build_conv_pool_block(2, 1,
+                                  data=data,
+                                  conv0={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 20},
+                                  conv1={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 20},
+                                  pool={'kernel': (2, 2), 'stride': (2, 2), 'pool_type': 'max'})
+    pool2 = build_conv_pool_block(2, 1,
+                                  data=pool1,
+                                  conv0={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 40},
+                                  conv1={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 40},
+                                  pool={'kernel': (2, 2), 'stride': (2, 2), 'pool_type': 'max'})
+    pool3 = build_conv_pool_block(2, 1,
+                                  data=pool2,
+                                  conv0={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 80},
+                                  conv1={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 80},
+                                  pool={'kernel': (2, 2), 'stride': (2, 2), 'pool_type': 'max'})
+    pool4 = build_conv_pool_block(2, 1,
+                                  data=pool3,
+                                  conv0={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 160},
+                                  conv1={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 160},
+                                  pool={'kernel': (2, 2), 'stride': (2, 2), 'pool_type': 'max'})
+    flatten = mx.sym.Flatten(data=pool4)
+    fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=50)  # origin lenet get 500 nodes
+    tanh3 = mx.sym.Activation(data=fc1, act_type="tanh")
+    # second fullc
+    fc2 = mx.sym.FullyConnected(data=tanh3, num_hidden=1)
+    # softmax loss
+    net_a = mx.sym.LinearRegressionOutput(data=fc2, label=label, name='linear_reg')
+
+    return net_a
