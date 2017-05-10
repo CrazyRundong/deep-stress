@@ -88,7 +88,8 @@ def build_net_a():
     pool1 = build_conv_pool_block(2, 1,
                                   data=data,
                                   conv0={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 20},
-                                  conv1={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 20},
+                                  conv1={'kernel': (1, 1), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 40},
+                                  conv2={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 20},
                                   pool={'kernel': (2, 2), 'stride': (2, 2), 'pool_type': 'max'})
     pool2 = build_conv_pool_block(2, 1,
                                   data=pool1,

@@ -2,10 +2,9 @@
 import mxnet as mx
 import numpy as np
 from scipy.interpolate import griddata
-from scipy.ndimage.interpolation import rotate
 from datetime import datetime
 import os
-import re
+from sklearn.model_selection import train_test_split
 
 comsol_dir = './Data/comsol_source'
 data_path = './Data/comsol_crops.npz'
@@ -47,15 +46,6 @@ def load_and_crop(data_set_dir=comsol_dir):
                                    np.logical_and((y - radius) <= tem_data[:, 1], tem_data[:, 1] <= (y + radius)))]
                 current_tem[:, :2] -= (x, y)
                 current_tem[:, :2] /= 2 * radius
-                # rescan tem distribution coordinate
-                # roi_bool_idx = np.abs(current_tem[:, :2]) <= 0.2
-                # extended_roi_idx = np.hstack((roi_bool_idx,
-                #                              np.zeros((current_tem.shape[0], 1), dtype=bool)))
-                # extended_not_roi_idx = np.hstack((np.logical_not(roi_bool_idx),
-                #                                  np.zeros((current_tem.shape[0], 1), dtype=bool)))
-                # current_tem[extended_roi_idx] *= 2.
-                # current_tem[extended_not_roi_idx] *= 1. / 3.
-                # current_tem[extended_not_roi_idx] += .4 - 1. / 6.
 
                 current_stress = stress_data[
                     np.logical_and(np.logical_and((x - radius) <= stress_data[:, 0], stress_data[:, 0] <= (x + radius)),
@@ -78,18 +68,25 @@ def local_interp(tem_list, stress_list, npz_dir=data_path):
     interped_list = np.array(interped_list)
     stress_list = np.array(stress_list)
 
-    tem_mean = np.mean(interped_list, axis=0)
-    interped_list -= tem_mean
-    tem_max = np.abs(interped_list).max()
-    interped_list /= tem_max
+    # Train / Val split
+    temp_train, temp_val, stress_train, stress_val = train_test_split(interped_list, stress_list, train_size=0.7)
 
-    stress_max = stress_list.max()
-    stress_list /= stress_max
+    tem_mean = np.mean(temp_train, axis=0)
+    temp_train -= tem_mean
+    temp_val -= tem_mean
+    tem_max = np.abs(temp_train).max()
+    # interped_list /= tem_max
+
+    stress_max = stress_train.max()
+    stress_train /= stress_max
+    stress_val /= stress_max
 
     # Dump npz
     np.savez_compressed(npz_dir,
-                        temp=interped_list,
-                        stress=stress_list,
+                        temp_train=temp_train,
+                        temp_val=temp_val,
+                        stress_train=stress_train,
+                        stress_val=stress_val,
                         max_temp=tem_max,
                         max_stress=stress_max)
 
