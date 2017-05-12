@@ -17,7 +17,7 @@ def main(draw_net=False):
     momentum = 0.9
     num_epoch = 100
     disp_batch = 50
-    num_batch = 1
+    num_batch = 1  # num_batch of val
     num_plot = 25
 
     base_lr = 0.01

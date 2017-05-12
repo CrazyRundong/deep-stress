@@ -72,10 +72,14 @@ def local_interp(tem_list, stress_list, npz_dir=data_path):
     temp_train, temp_val, stress_train, stress_val = train_test_split(interped_list, stress_list, train_size=0.7)
 
     tem_mean = np.mean(temp_train, axis=0)
+    tem_var = temp_train.var()
+
     temp_train -= tem_mean
     temp_val -= tem_mean
+    temp_train /= tem_var
+    temp_val /= tem_var
+
     tem_max = np.abs(temp_train).max()
-    # interped_list /= tem_max
 
     stress_max = stress_train.max()
     stress_train /= stress_max

@@ -31,8 +31,8 @@ def build_lenet():
 def build_conv_block(**kwargs):
     conv = mx.sym.Convolution(**kwargs)
     bn = mx.sym.BatchNorm(data=conv, fix_gamma=False, eps=1e-5 + 1e-10, momentum=0.9,)
-    # lkReLU = mx.sym.LeakyReLU(data=bn)
-    lkReLU = mx.sym.Activation(data=bn, act_type="relu")
+    lkReLU = mx.sym.LeakyReLU(data=bn)
+    # lkReLU = mx.sym.Activation(data=bn, act_type="relu")
 
     return lkReLU
 
@@ -55,16 +55,16 @@ def build_tiny_yolo():
     label = mx.sym.Variable('reg_label')
     pool1 = build_conv_pool_block(4, 1,
                                   data=data,
-                                  conv0={'kernel': (1, 1), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 16},
+                                  conv0={'kernel': (1, 1), 'stride': (1, 1), 'pad': (0, 0), 'num_filter': 16},
                                   conv1={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 32},
-                                  conv2={'kernel': (1, 1), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 16},
+                                  conv2={'kernel': (1, 1), 'stride': (1, 1), 'pad': (0, 0), 'num_filter': 16},
                                   conv3={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 32},
                                   pool={'kernel': (2, 2), 'stride': (2, 2), 'pool_type': 'max'})
     pool2 = build_conv_pool_block(4, 1,
                                   data=pool1,
-                                  conv0={'kernel': (1, 1), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 32},
+                                  conv0={'kernel': (1, 1), 'stride': (1, 1), 'pad': (0, 0), 'num_filter': 32},
                                   conv1={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 256},
-                                  conv2={'kernel': (1, 1), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 32},
+                                  conv2={'kernel': (1, 1), 'stride': (1, 1), 'pad': (0, 0), 'num_filter': 32},
                                   conv3={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 256},
                                   pool={'kernel': (2, 2), 'stride': (2, 2), 'pool_type': 'avg'})
     flatten = mx.sym.Flatten(data=pool2)
@@ -88,7 +88,7 @@ def build_net_a():
     pool1 = build_conv_pool_block(2, 1,
                                   data=data,
                                   conv0={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 20},
-                                  conv1={'kernel': (1, 1), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 40},
+                                  conv1={'kernel': (1, 1), 'stride': (1, 1), 'pad': (0, 0), 'num_filter': 40},
                                   conv2={'kernel': (3, 3), 'stride': (1, 1), 'pad': (1, 1), 'num_filter': 20},
                                   pool={'kernel': (2, 2), 'stride': (2, 2), 'pool_type': 'max'})
     pool2 = build_conv_pool_block(2, 1,
