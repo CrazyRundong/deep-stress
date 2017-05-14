@@ -22,3 +22,6 @@ base_lr | rescan_epoch | rescan_factor | batch_size | num_epoch | RMSE
 base_lr | rescan_epoch | rescan_factor | batch_size | num_epoch | RMSE
 : ---- :|: ---- :|: ---- :|: ---- :|: ---- :|: ---- :
 0.1 | 250 | 0.9 | 10 | 10 | 0.02993
+
+# B.D.Thesis Draft
+[Avaliable here](Thesis/draft.md), still struggling...

@@ -63,7 +63,8 @@ def main(draw_net=False):
         optimizer_params={'learning_rate': base_lr, 'momentum': momentum, 'lr_scheduler': lr_sch},
         eval_metric=metric,
         num_epoch=num_epoch,
-        batch_end_callback=mx.callback.Speedometer(batch_size, disp_batch)
+        batch_end_callback=mx.callback.Speedometer(batch_size, disp_batch),
+        # initializer=mx.init.Xavier(),
     )
     score = model.score(val_iter, metric)
     for idx_, score_ in score:
