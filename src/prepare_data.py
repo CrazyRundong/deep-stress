@@ -4,9 +4,13 @@ import numpy as np
 from scipy.interpolate import griddata
 from datetime import datetime
 import os
+import re
 from sklearn.model_selection import train_test_split
 
 comsol_dir = './Data/comsol_source'
+new_data_dir = './Data/comsol_new'
+data_dirs = [comsol_dir, new_data_dir]
+
 data_path = './Data/comsol_crops.npz'
 vst_num = 12  # num of vst per axis
 crop_size = 224  # follow standard CNN input size
@@ -18,23 +22,48 @@ feat_num = 500  # num of feature extracted per sample
 plot_num = 20  # num of test samples to plot
 
 
-def load_and_crop(data_set_dir=comsol_dir):
-    assert os.path.exists(data_set_dir)
+def load_dir(dirs=data_dirs):
+    assert isinstance(dirs, list)
+    name_pattern = r'([a-zA-Z]+)(\d+)'
+    temp_paths = []
+    stress_paths = []
+    
+    for data_dir in dirs:
+        assert os.path.exists(data_dir)
+        for root, _, files in os.walk(data_dir):
+            for fname in (os.path.splitext(file)[0] for file in files):
+                g = re.match(name_pattern, fname, re.I)
+                if g:
+                    if g.group(1) == 'stress':
+                        continue
+                    else:
+                        tem_path = os.path.join(root, 'tem' + g.group(2) + '.txt')
+                        stress_path = os.path.join(root, fname + '.txt')
+                else:
+                    # old data names
+                    fname = os.path.splitext(fname)[0]
+                    tem_tokens = fname.split('_')
+                    if tem_tokens[0] == 'stress':
+                        continue
+                    tem_path = os.path.join(root, fname + '.txt')
+                    stress_name = '_'.join(['stress'] + tem_tokens[1:]) + '.txt'
+                    stress_path = os.path.join(root, stress_name)
+                assert os.path.exists(stress_path) and os.path.exists(tem_path)
+                temp_paths.append(tem_path)
+                stress_paths.append(stress_path)
+    return temp_paths, stress_paths
+
+
+def load_and_crop(data_set_dir=data_dirs):
     vst_locate = np.linspace(0., 1., vst_num + 2)[1: -1]
     radius = 1. / (vst_num + 1) / 2. * radius_scale_factor
     tem_list = []  # the X
     stress_list = []  # the y
-    for fname in os.listdir(data_set_dir):
-        fname = os.path.splitext(fname)[0]
-        tem_tokens = fname.split('_')
-        if tem_tokens[0] == 'stress':
-            continue
-        tem_path = os.path.join(data_set_dir, fname + '.txt')
-        stress_name = '_'.join(['stress'] + tem_tokens[1:]) + '.txt'
-        stress_path = os.path.join(data_set_dir, stress_name)
-        assert os.path.exists(stress_path)
-        tem_data = np.loadtxt(tem_path, usecols=(0, 1, 3), dtype=np.float32)
-        stress_data = np.loadtxt(stress_path, usecols=(0, 1, 3), dtype=np.float32)
+    temp_paths, stress_paths = load_dir(data_set_dir)
+    for tem_path, stress_path in zip(temp_paths, stress_paths):
+        # skip rows with Chinese character
+        tem_data = np.loadtxt(tem_path, usecols=(0, 1, 3), dtype=np.float32, comments='%', skiprows=8)
+        stress_data = np.loadtxt(stress_path, usecols=(0, 1, 3), dtype=np.float32, comments='%', skiprows=8)
         # scan to [0, 1]
         tem_data[:, :2] *= 100
         stress_data[:, :2] *= 100
@@ -102,12 +131,12 @@ def generate_mx_array_itr(data_, label_, batch_size_=10, shuffle_=True):
     return itr
 
 
-def main():
+def main(npz_path=data_path):
     print('{}: Loading data...'.format(datetime.now().strftime('%Y.%m.%d-%H:%M:%S')))
     tem_list, stress_list = load_and_crop()
     print('{}: Crop and interpolating data...'.format(datetime.now().strftime('%Y.%m.%d-%H:%M:%S')))
-    local_interp(tem_list, stress_list)
+    local_interp(tem_list, stress_list, npz_path)
     print('{}: Data dump done.'.format(datetime.now().strftime('%Y.%m.%d-%H:%M:%S')))
 
 if __name__ == '__main__':
-    main()
+    main('./Data/comsol_new.npz')
