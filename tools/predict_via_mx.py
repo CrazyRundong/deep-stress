@@ -25,6 +25,7 @@ def main(draw_net=False):
     lr_rescan_factor = 0.9
 
     data_path = './Data/comsol_crops.npz'
+    # data_path = './Data/comsol_new.npz'
 
     if not os.path.exists(data_path):
         Data.main()
